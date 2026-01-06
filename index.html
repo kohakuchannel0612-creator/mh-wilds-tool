@@ -635,51 +635,57 @@ function isOnSelect(id){
   return (v === "ON" || v === "TRUE" || v === "1" || v === "YES");
 }
 
+function toRate01(v){
+  const x = Number(v);
+  if(!Number.isFinite(x)) return NaN;
+  if(x > 1) return x / 100;  // 45 -> 0.45
+  return x;                  // 0.45 -> 0.45
+}
 
 function getInput(){
   return {
-    // 基本
-    A_base: Number(document.getElementById("C3_A_base").value),
-    E_base: Number(document.getElementById("E3_E_base").value),
-    sharpRaw: Number(document.getElementById("G3_sharpRaw").value),
-    sharpElem: Number(document.getElementById("I3_sharpElem").value),
+    A_base: Number(document.getElementById("A_base").value),
+    E_base: Number(document.getElementById("E_base").value),
+    sharpRaw: Number(document.getElementById("sharpRaw").value),
+    sharpElem: Number(document.getElementById("sharpElem").value),
 
-    hhzvRaw:  toRate01(document.getElementById("C4_hzvRaw").value),
-    hzvElem: toRate01(document.getElementById("E4_hzvElem").value),
-    critBase:toRate01(document.getElementById("G4_critBase").value),
+    hzvRaw: toRate01(document.getElementById("hzvRaw").value),
+    hzvElem: toRate01(document.getElementById("hzvElem").value),
+    critBase: toRate01(document.getElementById("critBase").value),
 
-    totalSlots: Number(document.getElementById("C5_totalSlots").value),
-    sharpCnt:   Number(document.getElementById("E5_sharpCnt").value),
-    topN:       Number(document.getElementById("G5_topN").value),
-    roundMode:  Number(document.getElementById("I5_roundMode").value),
+    superCritLv: Number(document.getElementById("superCritLv").value),
+    attackSkillLv: Number(document.getElementById("attackSkillLv").value),
+    elemAtkUpLv: Number(document.getElementById("elemAtkUpLv").value),
+    senseiKououLv: Number(document.getElementById("senseiKououLv").value),
+    shinganLv: Number(document.getElementById("shinganLv").value),
 
-    // スキル類（必要になったら calc() 側で使う）
-    attackSkillLv: Number(document.getElementById("C8_attackSkillLv").value),
-    elemAtkUpLv:   Number(document.getElementById("C12_elemAtkUpLv").value),
-    senseiKououLv: Number(document.getElementById("G12_senseiKououLv").value),
-    shinganLv:     Number(document.getElementById("G9_shinganLv").value),
+    // ON/OFF は select の値で拾う（checkboxよりシートに近い）
+    kokushokuIttaiOn: document.getElementById("kokushokuIttaiOn").value === "ON",
 
-    kokushokuIttaiOn:  isOnSelect("I9_kokushokuIttaiOn"),
+    // まだ calc() が使ってなくてもOK（後で移植の時に使う）
+    totalSlots: Number(document.getElementById("totalSlots").value),
+    sharpCnt: Number(document.getElementById("sharpCnt").value),
+    topN: Number(document.getElementById("topN").value),
+    roundMode: Number(document.getElementById("roundMode").value),
 
-    superCritLv: Number(document.getElementById("C15_superCritLv").value),
+    kougekiLv: Number(document.getElementById("kougekiLv").value),
+    fullChargeLv: Number(document.getElementById("fullChargeLv").value),
+    semeNoShuseiLv: Number(document.getElementById("semeNoShuseiLv").value),
+    gyakushuLv: Number(document.getElementById("gyakushuLv").value),
+    nushiNoTamashiiOn: document.getElementById("nushiNoTamashiiOn").value === "ON",
 
-    // ここから下は、まだUI寄せの段階なので一旦持つだけでOK
-    // （calc() で使わないなら無視される）
-    kougekiLv: Number(document.getElementById("E8_kougekiLv").value),
-    fullChargeLv: Number(document.getElementById("G8_fullChargeLv").value),
-    semeNoShuseiLv: Number(document.getElementById("I8_semeNoShuseiLv").value),
-    gyakushuLv: Number(document.getElementById("C9_gyakushuLv").value),
-    nushiNoTamashiiOn: isOnSelect("E9_nushiNoTamashiiOn"),
-    saikaLv: Number(document.getElementById("E12_saikaLv").value),
-    critAttackElemLv: Number(document.getElementById("I12_critAttackElemLv").value),
-    wexLv: Number(document.getElementById("E15_wexLv").value),
-    konshinLv: Number(document.getElementById("G15_konshinLv").value),
-    chikaraNoKaihouLv: Number(document.getElementById("I15_chikaraNoKaihouLv").value),
-    kyouryuuKokufukuOn:isOnSelect("C16_kyouryuuKokufukuOn"),
-    mugaLv: Number(document.getElementById("E16_mugaLv").value),
-    challengerLv: Number(document.getElementById("C19_challengerLv").value),
-    rengekiLv: Number(document.getElementById("E19_rengekiLv").value),
-    rengekiBoostLv: Number(document.getElementById("G19_rengekiBoostLv").value),
+    saikaLv: Number(document.getElementById("saikaLv").value),
+    critAttackElemLv: Number(document.getElementById("critAttackElemLv").value),
+
+    wexLv: Number(document.getElementById("wexLv").value),
+    konshinLv: Number(document.getElementById("konshinLv").value),
+    chikaraNoKaihouLv: Number(document.getElementById("chikaraNoKaihouLv").value),
+    kyouryuuKokufukuOn: document.getElementById("kyouryuuKokufukuOn").value === "ON",
+    mugaLv: Number(document.getElementById("mugaLv").value),
+
+    challengerLv: Number(document.getElementById("challengerLv").value),
+    rengekiLv: Number(document.getElementById("rengekiLv").value),
+    rengekiBoostLv: Number(document.getElementById("rengekiBoostLv").value),
   };
 }
 
