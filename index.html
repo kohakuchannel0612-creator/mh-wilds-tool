@@ -675,10 +675,11 @@ function calcOptimizedTopN(input){
   const n = totalSlots - sharpCnt; // 最適化枠
   // n=0なら探索せず1件だけ返す
   if (n === 0) {
-    const single = calcSingleNoRestoration_(input, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
-    single.rank = 1;
-    return [single];
-  }
+  const single = calcSingleWithGekikaBest_(input, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
+  single.rank = 1;
+  single.exAtk = 0; single.exElm = 0; single.exAff = 0; single.exTotal = 0;
+  return [single];
+}
 
   const results = [];
   const picked = [];
@@ -690,7 +691,7 @@ function calcOptimizedTopN(input){
       const combo = picked.map(p => p.id).join(" / ");
 
       // 末端評価：まずは “復元ボーナスが入った” 単純計算（激化は後で）
-      const row = calcSingleNoRestoration_(input, { atkAdd, elemAdd, affAdd, combo });
+      const row = calcSingleWithGekikaBest_(input, { atkAdd, elemAdd, affAdd, combo });
 
       // EX数を載せる（Outputsに合わせる用）
       row.exAtk = picked.filter(p => p.cat === "atk" && p.isEX).length;
@@ -734,6 +735,100 @@ function calcOptimizedTopN(input){
 
   return top;
 }
+
+function calcSingleWithGekikaBest_(input, { atkAdd, elemAdd, affAdd, combo }) {
+  // まず「復元ボーナス反映後(激化前)」の土台
+  const A_restored = input.A_base + atkAdd;
+  const elemBase_restored = input.E_base + elemAdd;
+
+  // ここは calcSingleNoRestoration_ と同じ会心率合算ロジックにしてOK
+  // 例：今は affAdd だけ足してるならそれでOK。後でwex等を足すなら同様に。
+  const crit_restored = clamp(input.critBase + affAdd, 0, 1);
+
+  // ---- ここから先の「固定スキル計算」は、あなたの既存ロジックを使ってOK ----
+  // 乗算/加算を先に“まとめて作る”のがコツ（GAS移植と同じ）
+
+  // critMult
+  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
+
+  // 攻撃：倍率まとめ（例）
+  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
+  const shinganActive  = Number.isFinite(input.hzvRaw) && input.hzvRaw < 0.45;
+  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
+
+  // ここに「守勢」「ヌシ魂」など倍率があるなら足す（あなたの実装に合わせて）
+  const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
+
+  // 攻撃：加算まとめ（例）
+  const atkSkillAdd = getAttackSkillAdd(input.attackSkillLv);
+  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
+
+  // ここに「巧撃/フルチャ/逆襲/挑戦者/連撃…」があるなら同様に足す
+  const atkFlatAfterMultTotal =
+    atkSkillAdd
+    + A_kokushokuIttaiAdd;
+
+  // 属性：乗算/加算まとめ（例）
+  const sensei = getSenseiKououBonus_(input.senseiKououLv);
+  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
+  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
+
+  // ここに「災禍」「連撃」などがあるなら、同じ方針で elemMulted / elemAdded に入れる
+  const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
+  const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
+
+  // --- 激化3種を回してbestを取る ---
+  const trials = [
+    { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
+    { type: "会心激化", A_add: -10, crit_add: +0.10, elem_add: -20 },
+    { type: "属性激化", A_add:   0, crit_add: -0.05, elem_add: +30 },
+  ];
+
+  let best = null;
+
+  for (const t of trials) {
+    const A_mod_base = A_restored + t.A_add;
+    const crit_mod   = clamp(crit_restored + t.crit_add, 0, 1);
+    const elemBase_mod = Math.max(elemBase_restored + t.elem_add, 0);
+
+    const A_final = (A_mod_base * atkMultTotal) + atkFlatAfterMultTotal;
+
+    const elemUncapped = (elemBase_mod * elemMulted) + elemAdded;
+    const elemCap      = elementCapFromBase(elemBase_mod);
+    const E_final      = Math.min(elemUncapped, elemCap);
+
+    const dmg = calcRambuExpectedDamage({
+      A: A_final,
+      E: E_final,
+      sharpRaw: input.sharpRaw,
+      sharpElem: input.sharpElem,
+      hzvRaw: input.hzvRaw,
+      hzvElem: input.hzvElem,
+      critRate: crit_mod,
+      critMult,
+      roundMode: input.roundMode,
+    });
+
+    const row = {
+      dmg,
+      type: t.type,
+      combo,
+      atkAdd,
+      elemAdd,
+      affAdd,
+      critFinal: crit_mod,
+      elemUncapped,
+      elemCapped: E_final,
+      elemCap,
+      isElemCapped: elemUncapped > elemCap,
+    };
+
+    if (!best || row.dmg > best.dmg) best = row;
+  }
+
+  return best;
+}
+
 
 /**
  * 「復元ボーナスだけ反映」した1パターンのダメージ計算
@@ -815,6 +910,72 @@ function calcSingleNoRestoration_(input, { atkAdd, elemAdd, affAdd, combo }){
 function calc(input){
   return calcOptimizedTopN(input);
 }
+
+
+function evalBestGekika_({
+  // “復元ボーナス反映後(激化前)”の土台
+  A_restored,            // A_base + atkAdd
+  elemBase_restored,     // E_base + elemAdd
+  crit_restored,         // critBase + affAdd + ...（激化前の最終会心率）
+
+  // 入力と、スキル側で固定の係数
+  input,
+  atkMultTotal,              // 例：攻撃*心眼*ヌシ魂*守勢…など“乗算まとめ”
+  atkFlatAfterMultTotal,     // 例：巧撃/フルチャ/逆襲/挑戦者/連撃…など“加算まとめ”
+  elemMulted,                // 例：災禍*宣戦*属性強化…など“属性乗算まとめ”
+  elemAdded                  // 例：宣戦加算+連撃加算+属性強化加算…など“属性加算まとめ”
+}) {
+  const trials = [
+    { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
+    { type: "会心激化", A_add: -10, crit_add: +0.10, elem_add: -20 },
+    { type: "属性激化", A_add:   0, crit_add: -0.05, elem_add: +30 },
+  ];
+
+  let best = null;
+
+  for (const t of trials) {
+    // --- 激化で変わる“基礎” ---
+    const A_mod_base = A_restored + t.A_add;
+    const crit_mod   = clamp(crit_restored + t.crit_add, 0, 1);
+    const elemBase_mod = Math.max(elemBase_restored + t.elem_add, 0);
+
+    // --- 最終攻撃力（あなたの方針：乗算→加算）---
+    const A_final = (A_mod_base * atkMultTotal) + atkFlatAfterMultTotal;
+
+    // --- 最終属性（あなたの方針：乗算→加算、上限は elemBase_mod 基準）---
+    const elemUncapped = (elemBase_mod * elemMulted) + elemAdded;
+    const elemCap      = elementCapFromBase(elemBase_mod);
+    const E_final      = Math.min(elemUncapped, elemCap);
+
+    const dmg = calcRambuExpectedDamage({
+      A: A_final,
+      E: E_final,
+      sharpRaw: input.sharpRaw,
+      sharpElem: input.sharpElem,
+      hzvRaw: input.hzvRaw,
+      hzvElem: input.hzvElem,
+      critRate: crit_mod,
+      critMult: CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25,
+      roundMode: input.roundMode,
+      // ※会心撃【属性】を入れてるならここで渡す/反映する（あなたの実装に合わせて）
+    });
+
+    const cur = {
+      type: t.type,
+      dmg,
+      critFinal: crit_mod,
+      elemUncapped,
+      elemCapped: E_final,
+      elemCap,
+      isElemCapped: elemUncapped > elemCap,
+    };
+
+    if (!best || cur.dmg > best.dmg) best = cur;
+  }
+
+  return best;
+}
+
 
 
 /** =========================
