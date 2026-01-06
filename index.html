@@ -93,6 +93,26 @@
   .toggleRow input[type="checkbox"] {
     transform: scale(1.2);
   }
+    /* 上下2段のレイアウト */
+  .stack {
+    display: grid;
+    gap: 16px;
+    max-width: 1100px;
+  }
+
+  .panel {
+    border: 1px solid #ddd;
+    border-radius: 24px;          /* 角丸大きめ */
+    padding: 16px;
+    background: #fff;
+    min-height: 240px;            /* 枠の高さを確保（好みで調整） */
+  }
+
+  .panelTitle {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 10px;
+  }
   </style>
 </head>
 
@@ -103,10 +123,11 @@
     ※完成後に公開/広告を入れる想定のフックは用意してあります（今は無効）。
   </p>
 
-  <div class="grid">
-    <!-- ===== Left: Inputs ===== -->
-    <section class="card">
-      <h2 style="font-size:14px;margin:0 0 8px;">入力</h2>
+<div class="stack">
+
+  <!-- ===== 上：入力 ===== -->
+  <section class="panel">
+    <div class="panelTitle">入力</div>
 
       <!-- 基本 -->
 <section class="card">
@@ -328,32 +349,33 @@
       </div>
     </section>
 
-    <!-- ===== Right: Outputs ===== -->
-    <section class="card">
-      <h2 style="font-size:14px;margin:0 0 8px;">結果</h2>
+   <!-- ===== 下：結果 ===== -->
+  <section class="panel">
+    <div class="panelTitle">結果</div>
 
-      <div class="muted" id="summary"></div>
+    <div class="muted" id="summary"></div>
 
-      <div style="overflow:auto; max-height:70vh; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>期待ダメ</th>
-              <th>激化タイプ</th>
-              <th>復元ボーナス</th>
-              <th>最終会心率</th>
-              <th>属性(上限前)</th>
-              <th>属性(適用後)</th>
-              <th>上限</th>
-              <th>上限?</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
+    <div style="overflow:auto; max-height:55vh; margin-top:10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>期待ダメ</th>
+            <th>激化タイプ</th>
+            <th>復元ボーナス</th>
+            <th>最終会心率</th>
+            <th>属性(上限前)</th>
+            <th>属性(適用後)</th>
+            <th>上限</th>
+            <th>上限?</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
 
 <script>
 /** =========================
