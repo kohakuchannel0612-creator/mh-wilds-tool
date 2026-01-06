@@ -580,6 +580,27 @@ const RAMBU_GROUPS = [
   { mv: 36, count: 2, elem: 0.8 },
 ];
 
+// --- Restoration bonus definitions (GASと同じ) ---
+const BONUS_OPTIONS = [
+  // Attack
+  { id: "攻撃I",  cat: "atk", isEX: false, atk: 5,  elem: 0,  aff: 0.00 },
+  { id: "攻撃II", cat: "atk", isEX: false, atk: 6,  elem: 0,  aff: 0.00 },
+  { id: "攻撃III",cat: "atk", isEX: false, atk: 9,  elem: 0,  aff: 0.00 },
+  { id: "攻撃EX", cat: "atk", isEX: true,  atk: 12, elem: 0,  aff: 0.00 },
+
+  // Element
+  { id: "属性I",  cat: "elm", isEX: false, atk: 0,  elem: 20, aff: 0.00 },
+  { id: "属性II", cat: "elm", isEX: false, atk: 0,  elem: 30, aff: 0.00 },
+  { id: "属性EX", cat: "elm", isEX: true,  atk: 0,  elem: 50, aff: 0.00 },
+
+  // Affinity
+  { id: "会心I",  cat: "aff", isEX: false, atk: 0,  elem: 0,  aff: 0.05 },
+  { id: "会心II", cat: "aff", isEX: false, atk: 0,  elem: 0,  aff: 0.06 },
+  { id: "会心III",cat: "aff", isEX: false, atk: 0,  elem: 0,  aff: 0.08 },
+  { id: "会心EX", cat: "aff", isEX: true,  atk: 0,  elem: 0,  aff: 0.10 },
+];
+
+
 function clamp(x, lo, hi){ return Math.max(lo, Math.min(hi, x)); }
 function round1(x){ return Math.round(x*10)/10; }
 
@@ -617,6 +638,8 @@ function elementCapFromBase(baseElem){
   return Math.max(baseElem + 400, baseElem * 2.3);
 }
 
+
+
 // 期待ダメ計算（あなたの構造に合わせたミニ版）
 // ※会心撃【属性】などは後でここに追加してOK
 function calcRambuExpectedDamage({A,E,sharpRaw,sharpElem,hzvRaw,hzvElem,critRate,critMult,roundMode}){
@@ -640,45 +663,121 @@ function calcRambuExpectedDamage({A,E,sharpRaw,sharpElem,hzvRaw,hzvElem,critRate
   return total;
 }
 
+function calcOptimizedTopN(input){
+  // スロット条件
+  const totalSlots = Number(input.totalSlots);
+  const sharpCnt   = Number(input.sharpCnt);
+  const topN       = Math.max(1, Number(input.topN) || 10);
+
+  if (!Number.isFinite(totalSlots) || totalSlots <= 0) throw new Error("復元ボーナス総枠(totalSlots)が不正です");
+  if (!Number.isFinite(sharpCnt) || sharpCnt < 0 || sharpCnt > totalSlots) throw new Error("切れ味枠(sharpCnt)が不正です");
+
+  const n = totalSlots - sharpCnt; // 最適化枠
+  // n=0なら探索せず1件だけ返す
+  if (n === 0) {
+    const single = calcSingleNoRestoration_(input, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
+    single.rank = 1;
+    return [single];
+  }
+
+  const results = [];
+  const picked = [];
+  const exCount = { atk: 0, elm: 0, aff: 0 };
+  let atkAdd = 0, elemAdd = 0, affAdd = 0;
+
+  function dfs(depth, startIndex){
+    if (depth === n) {
+      const combo = picked.map(p => p.id).join(" / ");
+
+      // 末端評価：まずは “復元ボーナスが入った” 単純計算（激化は後で）
+      const row = calcSingleNoRestoration_(input, { atkAdd, elemAdd, affAdd, combo });
+
+      // EX数を載せる（Outputsに合わせる用）
+      row.exAtk = picked.filter(p => p.cat === "atk" && p.isEX).length;
+      row.exElm = picked.filter(p => p.cat === "elm" && p.isEX).length;
+      row.exAff = picked.filter(p => p.cat === "aff" && p.isEX).length;
+      row.exTotal = row.exAtk + row.exElm + row.exAff;
+
+      results.push(row);
+      return;
+    }
+
+    for (let i = startIndex; i < BONUS_OPTIONS.length; i++){
+      const opt = BONUS_OPTIONS[i];
+
+      if (opt.isEX) {
+        if (exCount[opt.cat] >= 2) continue;
+        exCount[opt.cat]++;
+      }
+
+      picked.push(opt);
+      atkAdd += opt.atk;
+      elemAdd += opt.elem;
+      affAdd += opt.aff;
+
+      dfs(depth + 1, i); // GASと同じ（同一indexを許容＝重複選択OK）
+
+      affAdd -= opt.aff;
+      elemAdd -= opt.elem;
+      atkAdd -= opt.atk;
+      picked.pop();
+
+      if (opt.isEX) exCount[opt.cat]--;
+    }
+  }
+
+  dfs(0, 0);
+
+  // dmg降順 → topN
+  results.sort((a,b)=> b.dmg - a.dmg);
+  const top = results.slice(0, topN).map((r, idx)=> ({...r, rank: idx+1}));
+
+  return top;
+}
+
 /**
- * これが“外に出す”計算API
- * GASの optimizeRestorationBonuses_Rambu の入口に相当
+ * 「復元ボーナスだけ反映」した1パターンのダメージ計算
+ * A段階なので激化なし / 既存calc()に合わせてる
  */
-function calc(input){
-  // --- 攻撃系 ---
+function calcSingleNoRestoration_(input, { atkAdd, elemAdd, affAdd, combo }){
   const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
 
+  // --- 攻撃：復元 atkAdd を基礎へ足す（あなたのGASも A_restored = A_base + atkAdd）
+  const A_base_restored = input.A_base + atkAdd;
+
+  // 既存：心眼など
   const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
   const atkSkillAdd  = getAttackSkillAdd(input.attackSkillLv);
 
   const shinganActive  = Number.isFinite(input.hzvRaw) && input.hzvRaw < 0.45;
   const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
 
-  // 黒蝕一体：ONで +15（あなたの方針に合わせて加算でOK）
   const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
 
-  // ※ここに「攻めの守勢」「ヌシ魂」など倍率が増えるなら掛け算に足していく
   const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
 
-  // ここはあなたの“正しい”方針（加算部）
   const atkFlatAfterMultTotal =
     atkSkillAdd
     + A_kokushokuIttaiAdd;
 
-  const A_final = (input.A_base * atkMultTotal) + atkFlatAfterMultTotal;
+  const A_final = (A_base_restored * atkMultTotal) + atkFlatAfterMultTotal;
 
-  // --- 属性系（乗算→加算の順を厳密に） ---
+  // --- 属性：復元 elemAdd を基礎へ足す（GAS: elemBase_restored = E_base + elemAdd）
+  const E_base_restored = input.E_base + elemAdd;
+
   const sensei = getSenseiKououBonus_(input.senseiKououLv);
   const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
   const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
 
-  // ※将来「災禍転福」「連撃」などがあるならここに積む（乗算/加算を分けて）
   const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
   const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
 
-  const elemUncapped = input.E_base * elemMulted + elemAdded;
-  const elemCap      = elementCapFromBase(input.E_base);
+  const elemUncapped = E_base_restored * elemMulted + elemAdded;
+  const elemCap      = elementCapFromBase(E_base_restored); // 上限基準も復元後ベースにする
   const E_final      = Math.min(elemUncapped, elemCap);
+
+  // --- 会心：復元 affAdd を基礎会心に足す（他の会心スキルは後で）
+  const critFinal = clamp(input.critBase + affAdd, 0, 1);
 
   const dmg = calcRambuExpectedDamage({
     A: A_final,
@@ -687,24 +786,36 @@ function calc(input){
     sharpElem: input.sharpElem,
     hzvRaw: input.hzvRaw,
     hzvElem: input.hzvElem,
-    critRate: input.critBase,
+    critRate: critFinal,
     critMult,
     roundMode: input.roundMode,
   });
 
-  // いまは復元最適化を入れてないので、結果を1行だけ返す（後でTopNに拡張）
-  return [{
-    rank: 1,
+  return {
+    rank: 0,              // 後で付ける
     dmg,
-    type: "（仮）",
-    combo: "—",
-    critFinal: input.critBase,
+    type: "（A段階）",
+    combo: combo ?? "—",
+    atkAdd,
+    elemAdd,
+    affAdd,
+    critFinal,
     elemUncapped,
     elemCapped: E_final,
     elemCap,
-    isElemCapped: elemUncapped > elemCap
-  }];
+    isElemCapped: elemUncapped > elemCap,
+  };
 }
+
+
+/**
+ * これが“外に出す”計算API
+ * GASの optimizeRestorationBonuses_Rambu の入口に相当
+ */
+function calc(input){
+  return calcOptimizedTopN(input);
+}
+
 
 /** =========================
  *  ここから「UI」ゾーン
