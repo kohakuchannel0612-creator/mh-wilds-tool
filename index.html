@@ -1,12 +1,400 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>MHWilds Tool</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MHWilds 乱舞ツール（仮）</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 16px; line-height: 1.4; }
+    h1 { font-size: 18px; margin: 0 0 12px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 1000px; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 360px 1fr; } }
+
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; background: #fff; }
+    .row { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; margin: 8px 0; }
+    label { font-size: 13px; color: #333; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 8px; }
+    input[type="checkbox"] { width: auto; }
+    .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    button { padding: 8px 12px; border-radius: 10px; border: 1px solid #ccc; background: #f7f7f7; cursor: pointer; }
+    button.primary { background: #222; color: #fff; border-color: #222; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border-bottom: 1px solid #eee; padding: 6px 6px; text-align: left; }
+    th { background: #fafafa; position: sticky; top: 0; z-index: 1; }
+    .muted { color: #666; font-size: 12px; }
+    .ok { color: #0a7; }
+    .ng { color: #c22; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
 </head>
+
 <body>
-  <h1>MHWilds ツール</h1>
-  <p>GitHub Pages 表示テスト</p>
+  <h1>MHWilds 乱舞ツール（仮）</h1>
+  <p class="muted">
+    ※計算ロジックは <span class="mono">calc()</span> 以下に隔離。UIは入力→計算→表表示だけ。<br>
+    ※完成後に公開/広告を入れる想定のフックは用意してあります（今は無効）。
+  </p>
+
+  <div class="grid">
+    <!-- ===== Left: Inputs ===== -->
+    <section class="card">
+      <h2 style="font-size:14px;margin:0 0 8px;">入力</h2>
+
+      <!-- 基本 -->
+      <div class="row">
+        <label>基礎攻撃力 (A_base)</label>
+        <input id="A_base" type="number" value="300" step="1" />
+      </div>
+
+      <div class="row">
+        <label>基礎属性 (E_base)</label>
+        <input id="E_base" type="number" value="250" step="1" />
+      </div>
+
+      <div class="row">
+        <label>斬れ味 物理倍率</label>
+        <input id="sharpRaw" type="number" value="1.32" step="0.01" />
+      </div>
+
+      <div class="row">
+        <label>斬れ味 属性倍率</label>
+        <input id="sharpElem" type="number" value="1.15" step="0.01" />
+      </div>
+
+      <div class="row">
+        <label>物理肉質 (例:0.45)</label>
+        <input id="hzvRaw" type="number" value="0.45" step="0.01" />
+      </div>
+
+      <div class="row">
+        <label>属性肉質 (例:0.25)</label>
+        <input id="hzvElem" type="number" value="0.25" step="0.01" />
+      </div>
+
+      <div class="row">
+        <label>基礎会心率 (例:0.10)</label>
+        <input id="critBase" type="number" value="0.10" step="0.01" />
+      </div>
+
+      <div class="row">
+        <label>超会心Lv (0..5)</label>
+        <select id="superCritLv">
+          <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
+
+      <!-- 主要スキル（例） -->
+      <div class="row">
+        <label>攻撃Lv (0..5)</label>
+        <input id="attackSkillLv" type="number" value="0" min="0" max="5" step="1" />
+      </div>
+
+      <div class="row">
+        <label>属性攻撃強化Lv (0..3)</label>
+        <input id="elemAtkUpLv" type="number" value="0" min="0" max="3" step="1" />
+      </div>
+
+      <div class="row">
+        <label>宣戦呼応Lv (0..2)</label>
+        <input id="senseiKououLv" type="number" value="0" min="0" max="2" step="1" />
+      </div>
+
+      <div class="row">
+        <label>心眼Lv (0..3) ※肉質&lt;0.45</label>
+        <input id="shinganLv" type="number" value="0" min="0" max="3" step="1" />
+      </div>
+
+      <div class="row">
+        <label>黒蝕一体 ON</label>
+        <input id="kokushokuIttaiOn" type="checkbox" />
+      </div>
+
+      <div class="row">
+        <label>丸めモード</label>
+        <input id="roundMode" type="number" value="0" step="1" />
+      </div>
+
+      <div class="row">
+        <label>Top N</label>
+        <input id="topN" type="number" value="10" min="1" max="200" step="1" />
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="btnCalc">計算</button>
+        <button id="btnReset">リセット</button>
+      </div>
+
+      <p class="muted" id="status"></p>
+
+      <!-- 将来の広告（今は隠す） -->
+      <div id="ads-bottom" style="display:none; margin-top:12px; border-top:1px dashed #ddd; padding-top:10px;">
+        <!-- 広告コードは完成後にここへ -->
+      </div>
+    </section>
+
+    <!-- ===== Right: Outputs ===== -->
+    <section class="card">
+      <h2 style="font-size:14px;margin:0 0 8px;">結果</h2>
+
+      <div class="muted" id="summary"></div>
+
+      <div style="overflow:auto; max-height:70vh; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>期待ダメ</th>
+              <th>激化タイプ</th>
+              <th>復元ボーナス</th>
+              <th>最終会心率</th>
+              <th>属性(上限前)</th>
+              <th>属性(適用後)</th>
+              <th>上限</th>
+              <th>上限?</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+/** =========================
+ *  公開/広告スイッチ（完成後に true）
+ *  ========================= */
+const IS_PUBLIC = false;
+
+/** =========================
+ *  ここから「計算ロジック」ゾーン
+ *  UIとは切り離す
+ *  ========================= */
+
+const CRIT_MULT_BY_SUPERCRIT = { 0:1.25, 1:1.28, 2:1.31, 3:1.34, 4:1.37, 5:1.40 };
+
+// 乱舞グループ（あなたの定義をそのまま）
+const RAMBU_GROUPS = [
+  { mv: 18, count: 2, elem: 1.0 },
+  { mv: 6,  count: 2, elem: 0.6 },
+  { mv: 10, count: 2, elem: 0.6 },
+  { mv: 4,  count: 2, elem: 0.8 },
+  { mv: 20, count: 2, elem: 0.8 },
+  { mv: 11, count: 2, elem: 0.8 },
+  { mv: 16, count: 2, elem: 0.6 },
+  { mv: 6,  count: 1, elem: 0.8 },
+  { mv: 25, count: 1, elem: 0.8 },
+  { mv: 22, count: 1, elem: 0.6 },
+  { mv: 8,  count: 1, elem: 0.6 },
+  { mv: 5,  count: 1, elem: 0.6 },
+  { mv: 22, count: 1, elem: 0.6 },
+  { mv: 5,  count: 1, elem: 0.8 },
+  { mv: 14, count: 1, elem: 0.8 },
+  { mv: 18, count: 1, elem: 0.8 },
+  { mv: 8,  count: 1, elem: 0.8 },
+  { mv: 18, count: 1, elem: 0.8 },
+  { mv: 36, count: 2, elem: 0.8 },
+];
+
+function clamp(x, lo, hi){ return Math.max(lo, Math.min(hi, x)); }
+function round1(x){ return Math.round(x*10)/10; }
+
+function getAttackSkillMult(lv){ return (lv===4)?1.02:(lv===5)?1.04:1.0; }
+function getAttackSkillAdd(lv){ return (lv===1)?3:(lv===2)?5:(lv===3)?7:(lv===4)?8:(lv===5)?9:0; }
+
+function getShinganAtkMult_(lv){
+  lv = clamp(Number(lv)||0,0,3);
+  return (lv===1)?1.10:(lv===2)?1.20:(lv===3)?1.30:1.00;
+}
+
+function getSenseiKououBonus_(lv){
+  lv = clamp(Number(lv)||0,0,2);
+  if(lv===1) return { elemMult:1.20, elemAdd:20 };
+  if(lv===2) return { elemMult:1.30, elemAdd:40 };
+  return { elemMult:1.00, elemAdd:0 };
+}
+
+// 属性攻撃強化（分割済み想定）
+function getElemAtkUpMult_(lv){
+  lv = clamp(Number(lv)||0,0,3);
+  if(lv===2) return 1.1;
+  if(lv===3) return 1.2;
+  return 1.0; // Lv0,1は乗算なし
+}
+function getElemAtkUpAdd_(lv){
+  lv = clamp(Number(lv)||0,0,3);
+  if(lv===1) return 40;
+  if(lv===2) return 50;
+  if(lv===3) return 60;
+  return 0;
+}
+
+function elementCapFromBase(baseElem){
+  return Math.max(baseElem + 400, baseElem * 2.3);
+}
+
+// 期待ダメ計算（あなたの構造に合わせたミニ版）
+// ※会心撃【属性】などは後でここに追加してOK
+function calcRambuExpectedDamage({A,E,sharpRaw,sharpElem,hzvRaw,hzvElem,critRate,critMult,roundMode}){
+  const r = clamp(critRate,0,1);
+  const mode = Number(roundMode)||0;
+  let total = 0;
+
+  for(const g of RAMBU_GROUPS){
+    const rawBasePerHit  = A * (g.mv/100) * sharpRaw * hzvRaw;
+    const elemPerHit     = (E/10) * g.elem * sharpElem * hzvElem;
+
+    const perHit = rawBasePerHit * ((1-r)+r*critMult) + elemPerHit;
+
+    if(mode===10){
+      total += round1(perHit) * g.count;
+    }else{
+      total += perHit * g.count;
+    }
+  }
+  if(mode===10) return round1(total);
+  return total;
+}
+
+/**
+ * これが“外に出す”計算API
+ * GASの optimizeRestorationBonuses_Rambu の入口に相当
+ */
+function calc(input){
+  // --- 攻撃系 ---
+  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
+
+  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
+  const atkSkillAdd  = getAttackSkillAdd(input.attackSkillLv);
+
+  const shinganActive  = Number.isFinite(input.hzvRaw) && input.hzvRaw < 0.45;
+  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
+
+  // 黒蝕一体：ONで +15（あなたの方針に合わせて加算でOK）
+  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
+
+  // ※ここに「攻めの守勢」「ヌシ魂」など倍率が増えるなら掛け算に足していく
+  const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
+
+  // ここはあなたの“正しい”方針（加算部）
+  const atkFlatAfterMultTotal =
+    atkSkillAdd
+    + A_kokushokuIttaiAdd;
+
+  const A_final = (input.A_base * atkMultTotal) + atkFlatAfterMultTotal;
+
+  // --- 属性系（乗算→加算の順を厳密に） ---
+  const sensei = getSenseiKououBonus_(input.senseiKououLv);
+  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
+  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
+
+  // ※将来「災禍転福」「連撃」などがあるならここに積む（乗算/加算を分けて）
+  const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
+  const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
+
+  const elemUncapped = input.E_base * elemMulted + elemAdded;
+  const elemCap      = elementCapFromBase(input.E_base);
+  const E_final      = Math.min(elemUncapped, elemCap);
+
+  const dmg = calcRambuExpectedDamage({
+    A: A_final,
+    E: E_final,
+    sharpRaw: input.sharpRaw,
+    sharpElem: input.sharpElem,
+    hzvRaw: input.hzvRaw,
+    hzvElem: input.hzvElem,
+    critRate: input.critBase,
+    critMult,
+    roundMode: input.roundMode,
+  });
+
+  // いまは復元最適化を入れてないので、結果を1行だけ返す（後でTopNに拡張）
+  return [{
+    rank: 1,
+    dmg,
+    type: "（仮）",
+    combo: "—",
+    critFinal: input.critBase,
+    elemUncapped,
+    elemCapped: E_final,
+    elemCap,
+    isElemCapped: elemUncapped > elemCap
+  }];
+}
+
+/** =========================
+ *  ここから「UI」ゾーン
+ *  ========================= */
+
+function getInput(){
+  return {
+    A_base: Number(document.getElementById("A_base").value),
+    E_base: Number(document.getElementById("E_base").value),
+    sharpRaw: Number(document.getElementById("sharpRaw").value),
+    sharpElem: Number(document.getElementById("sharpElem").value),
+    hzvRaw: Number(document.getElementById("hzvRaw").value),
+    hzvElem: Number(document.getElementById("hzvElem").value),
+    critBase: Number(document.getElementById("critBase").value),
+    superCritLv: Number(document.getElementById("superCritLv").value),
+    attackSkillLv: Number(document.getElementById("attackSkillLv").value),
+    elemAtkUpLv: Number(document.getElementById("elemAtkUpLv").value),
+    senseiKououLv: Number(document.getElementById("senseiKououLv").value),
+    shinganLv: Number(document.getElementById("shinganLv").value),
+    kokushokuIttaiOn: document.getElementById("kokushokuIttaiOn").checked,
+    roundMode: Number(document.getElementById("roundMode").value),
+    topN: Number(document.getElementById("topN").value),
+  };
+}
+
+function render(rows){
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  for(const r of rows){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.rank}</td>
+      <td>${Number(r.dmg).toFixed(3)}</td>
+      <td>${r.type ?? ""}</td>
+      <td class="mono">${r.combo ?? ""}</td>
+      <td>${Number(r.critFinal).toFixed(3)}</td>
+      <td>${Number(r.elemUncapped).toFixed(2)}</td>
+      <td>${Number(r.elemCapped).toFixed(2)}</td>
+      <td>${Number(r.elemCap).toFixed(2)}</td>
+      <td class="${r.isElemCapped?'ok':'muted'}">${r.isElemCapped?'YES':'NO'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function setStatus(msg){ document.getElementById("status").textContent = msg; }
+
+document.getElementById("btnCalc").addEventListener("click", () => {
+  try{
+    const input = getInput();
+    const rows = calc(input);
+    render(rows);
+
+    document.getElementById("summary").textContent =
+      `A=${input.A_base}, E=${input.E_base}, hzvRaw=${input.hzvRaw}, hzvElem=${input.hzvElem} / 結果=${rows.length}件`;
+
+    setStatus("OK");
+  }catch(e){
+    console.error(e);
+    setStatus("エラー: " + (e?.message ?? String(e)));
+  }
+});
+
+document.getElementById("btnReset").addEventListener("click", () => {
+  location.reload();
+});
+
+// 公開時のみ広告枠を有効化（今は false）
+if (IS_PUBLIC) {
+  document.getElementById("ads-bottom").style.display = "block";
+}
+</script>
 </body>
 </html>
-
