@@ -161,6 +161,86 @@
   min-height: 160px;
 }
 
+  /* 既存のbody等はそのままでOK */
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .sheet-title { font-size: 22px; font-weight: 700; margin: 10px 0 14px; }
+  .hint {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    color: #444;
+    margin: 0 0 14px;
+  }
+
+  .card {
+    border: 1px solid #d8d8d8;
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    margin-bottom: 14px;
+  }
+
+  .card-head {
+    background: #eaf3fb;
+    padding: 10px 12px;
+    font-weight: 700;
+    color: #1f2a37;
+    border-bottom: 1px solid #d8d8d8;
+  }
+
+  .card-body { padding: 12px; }
+
+  /* “シートっぽい” 横並びグリッド */
+  .grid-6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+  @media (max-width: 980px){
+    .grid-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .field { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .field label { font-size: 12px; color: #374151; }
+  .field .sub { font-size: 11px; color: #6b7280; }
+
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cfd3d8;
+    border-radius: 10px;
+    font-size: 14px;
+    background: #fff;
+  }
+
+  .row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 980px){ .row-inline { grid-template-columns: 1fr; } }
+
+  .btnbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+  .btnbar .left { margin-right: auto; color: #6b7280; font-size: 12px; }
+
+  button.primary {
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+  }
+  button.ghost {
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid #cfd3d8;
+    background: #f7f7f7;
+  }
+
+
   </style>
 </head>
 
@@ -630,10 +710,7 @@ function calc(input){
  *  ここから「UI」ゾーン
  *  ========================= */
 
-function isOnSelect(id){
-  const v = String(document.getElementById(id).value).toUpperCase();
-  return (v === "ON" || v === "TRUE" || v === "1" || v === "YES");
-}
+
 
 function toRate01(v){
   const x = Number(v);
@@ -732,12 +809,7 @@ document.getElementById("btnReset").addEventListener("click", () => {
   location.reload();
 });
 
-function toRate01(v){
-  const x = Number(v);
-  if(!Number.isFinite(x)) return NaN;
-  if(x > 1) return x / 100;  // 45 -> 0.45
-  return x;                  // 0.45 -> 0.45
-}
+
 
 
 // 公開時のみ広告枠を有効化（今は false）
