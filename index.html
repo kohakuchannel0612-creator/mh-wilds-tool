@@ -43,93 +43,77 @@
       <h2 style="font-size:14px;margin:0 0 8px;">入力</h2>
 
       <!-- 基本 -->
-      <div class="row">
-        <label>基礎攻撃力 (A_base)</label>
-        <input id="A_base" type="number" value="300" step="1" />
-      </div>
+<section class="card">
+  <h2 style="font-size:14px;margin:0 0 8px;">入力（シート配置寄せ）</h2>
 
-      <div class="row">
-        <label>基礎属性 (E_base)</label>
-        <input id="E_base" type="number" value="250" step="1" />
-      </div>
+  <div class="muted" style="margin:6px 0 10px;">
+    ※%系は「0.45方式」で統一（GASの toRate01 と同等の吸収をWeb側にも入れる）
+  </div>
 
-      <div class="row">
-        <label>斬れ味 物理倍率</label>
-        <input id="sharpRaw" type="number" value="1.32" step="0.01" />
-      </div>
+  <!-- シートっぽい並び：C列 / E列 / G列 / I列を意識 -->
+  <div class="row"><label>C3 基礎攻撃力 (A_base)</label><input id="C3_A_base" type="number" value="300" step="1"></div>
+  <div class="row"><label>E3 基礎属性 (E_base)</label><input id="E3_E_base" type="number" value="250" step="1"></div>
+  <div class="row"><label>G3 斬れ味 物理倍率</label><input id="G3_sharpRaw" type="number" value="1.32" step="0.01"></div>
+  <div class="row"><label>I3 斬れ味 属性倍率</label><input id="I3_sharpElem" type="number" value="1.15" step="0.01"></div>
 
-      <div class="row">
-        <label>斬れ味 属性倍率</label>
-        <input id="sharpElem" type="number" value="1.15" step="0.01" />
-      </div>
+  <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
 
-      <div class="row">
-        <label>物理肉質 (例:0.45)</label>
-        <input id="hzvRaw" type="number" value="0.45" step="0.01" />
-      </div>
+  <div class="row"><label>C4 物理肉質 (例:0.45 / 45)</label><input id="C4_hzvRaw" type="number" value="0.45" step="0.01"></div>
+  <div class="row"><label>E4 属性肉質 (例:0.25 / 25)</label><input id="E4_hzvElem" type="number" value="0.25" step="0.01"></div>
+  <div class="row"><label>G4 基礎会心率 (例:0.10 / 10)</label><input id="G4_critBase" type="number" value="0.10" step="0.01"></div>
 
-      <div class="row">
-        <label>属性肉質 (例:0.25)</label>
-        <input id="hzvElem" type="number" value="0.25" step="0.01" />
-      </div>
+  <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
 
-      <div class="row">
-        <label>基礎会心率 (例:0.10)</label>
-        <input id="critBase" type="number" value="0.10" step="0.01" />
-      </div>
+  <div class="row"><label>C5 総スロット (totalSlots)</label><input id="C5_totalSlots" type="number" value="5" min="0" step="1"></div>
+  <div class="row"><label>E5 切れ味枠 (sharpCnt)</label><input id="E5_sharpCnt" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>G5 TopN</label><input id="G5_topN" type="number" value="10" min="1" max="200" step="1"></div>
+  <div class="row"><label>I5 丸めモード</label><input id="I5_roundMode" type="number" value="0" step="1"></div>
 
-      <div class="row">
-        <label>超会心Lv (0..5)</label>
-        <select id="superCritLv">
-          <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-        </select>
-      </div>
+  <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
 
-      <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
+  <div class="row"><label>C8 攻撃Lv (0..5)</label><input id="C8_attackSkillLv" type="number" value="0" min="0" max="5" step="1"></div>
+  <div class="row"><label>E8 巧撃Lv</label><input id="E8_kougekiLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>G8 フルチャLv</label><input id="G8_fullChargeLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>I8 攻めの守勢Lv</label><input id="I8_semeNoShuseiLv" type="number" value="0" min="0" step="1"></div>
 
-      <!-- 主要スキル（例） -->
-      <div class="row">
-        <label>攻撃Lv (0..5)</label>
-        <input id="attackSkillLv" type="number" value="0" min="0" max="5" step="1" />
-      </div>
+  <div class="row"><label>C9 逆襲Lv</label><input id="C9_gyakushuLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>E9 ヌシの魂 ON</label><input id="E9_nushiNoTamashiiOn" type="checkbox"></div>
+  <div class="row"><label>G9 心眼Lv (0..3)</label><input id="G9_shinganLv" type="number" value="0" min="0" max="3" step="1"></div>
 
-      <div class="row">
-        <label>属性攻撃強化Lv (0..3)</label>
-        <input id="elemAtkUpLv" type="number" value="0" min="0" max="3" step="1" />
-      </div>
+  <div class="row"><label>C12 属性攻撃強化Lv (0..3)</label><input id="C12_elemAtkUpLv" type="number" value="0" min="0" max="3" step="1"></div>
+  <div class="row"><label>E12 災禍転福Lv (0..3)</label><input id="E12_saikaLv" type="number" value="0" min="0" max="3" step="1"></div>
+  <div class="row"><label>G12 宣戦呼応Lv (0..2)</label><input id="G12_senseiKououLv" type="number" value="0" min="0" max="2" step="1"></div>
+  <div class="row"><label>I12 会心撃【属性】Lv</label><input id="I12_critAttackElemLv" type="number" value="0" min="0" step="1"></div>
 
-      <div class="row">
-        <label>宣戦呼応Lv (0..2)</label>
-        <input id="senseiKououLv" type="number" value="0" min="0" max="2" step="1" />
-      </div>
+  <div class="row"><label>C15 超会心Lv (0..5)</label>
+    <select id="C15_superCritLv">
+      <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+    </select>
+  </div>
+  <div class="row"><label>E15 弱点特攻Lv</label><input id="E15_wexLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>G15 渾身Lv</label><input id="G15_konshinLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>I15 力の解放Lv</label><input id="I15_chikaraNoKaihouLv" type="number" value="0" min="0" step="1"></div>
 
-      <div class="row">
-        <label>心眼Lv (0..3) ※肉質&lt;0.45</label>
-        <input id="shinganLv" type="number" value="0" min="0" max="3" step="1" />
-      </div>
+  <div class="row"><label>C16 狂竜症克服 ON</label><input id="C16_kyouryuuKokufukuOn" type="checkbox"></div>
+  <div class="row"><label>E16 無我の境地Lv</label><input id="E16_mugaLv" type="number" value="0" min="0" step="1"></div>
 
-      <div class="row">
-        <label>黒蝕一体 ON</label>
-        <input id="kokushokuIttaiOn" type="checkbox" />
-      </div>
+  <div class="row"><label>C19 挑戦者Lv</label><input id="C19_challengerLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>E19 連撃Lv</label><input id="E19_rengekiLv" type="number" value="0" min="0" step="1"></div>
+  <div class="row"><label>G19 連撃強化Lv</label><input id="G19_rengekiBoostLv" type="number" value="0" min="0" step="1"></div>
 
-      <div class="row">
-        <label>丸めモード</label>
-        <input id="roundMode" type="number" value="0" step="1" />
-      </div>
+  <!-- 黒蝕一体：GASは I9 ON/OFF になってるのでUIも I9 として置く -->
+  <hr style="border:none;border-top:1px solid #eee;margin:10px 0;">
+  <div class="row"><label>I9 黒蝕一体 ON</label><input id="I9_kokushokuIttaiOn" type="checkbox"></div>
 
-      <div class="row">
-        <label>Top N</label>
-        <input id="topN" type="number" value="10" min="1" max="200" step="1" />
-      </div>
+  <div class="btns">
+    <button class="primary" id="btnCalc">計算</button>
+    <button id="btnReset">リセット</button>
+  </div>
 
-      <div class="btns">
-        <button class="primary" id="btnCalc">計算</button>
-        <button id="btnReset">リセット</button>
-      </div>
+  <p class="muted" id="status"></p>
+</section>
 
-      <p class="muted" id="status"></p>
-
+      
       <!-- 将来の広告（今は隠す） -->
       <div id="ads-bottom" style="display:none; margin-top:12px; border-top:1px dashed #ddd; padding-top:10px;">
         <!-- 広告コードは完成後にここへ -->
@@ -331,23 +315,51 @@ function calc(input){
 
 function getInput(){
   return {
-    A_base: Number(document.getElementById("A_base").value),
-    E_base: Number(document.getElementById("E_base").value),
-    sharpRaw: Number(document.getElementById("sharpRaw").value),
-    sharpElem: Number(document.getElementById("sharpElem").value),
-    hzvRaw: Number(document.getElementById("hzvRaw").value),
-    hzvElem: Number(document.getElementById("hzvElem").value),
-    critBase: Number(document.getElementById("critBase").value),
-    superCritLv: Number(document.getElementById("superCritLv").value),
-    attackSkillLv: Number(document.getElementById("attackSkillLv").value),
-    elemAtkUpLv: Number(document.getElementById("elemAtkUpLv").value),
-    senseiKououLv: Number(document.getElementById("senseiKououLv").value),
-    shinganLv: Number(document.getElementById("shinganLv").value),
-    kokushokuIttaiOn: document.getElementById("kokushokuIttaiOn").checked,
-    roundMode: Number(document.getElementById("roundMode").value),
-    topN: Number(document.getElementById("topN").value),
+    // 基本
+    A_base: Number(document.getElementById("C3_A_base").value),
+    E_base: Number(document.getElementById("E3_E_base").value),
+    sharpRaw: Number(document.getElementById("G3_sharpRaw").value),
+    sharpElem: Number(document.getElementById("I3_sharpElem").value),
+
+    hzvRaw:  toRate01(document.getElementById("C4_hzvRaw").value),
+    hzvElem: toRate01(document.getElementById("E4_hzvElem").value),
+    critBase:toRate01(document.getElementById("G4_critBase").value),
+
+    totalSlots: Number(document.getElementById("C5_totalSlots").value),
+    sharpCnt:   Number(document.getElementById("E5_sharpCnt").value),
+    topN:       Number(document.getElementById("G5_topN").value),
+    roundMode:  Number(document.getElementById("I5_roundMode").value),
+
+    // スキル類（必要になったら calc() 側で使う）
+    attackSkillLv: Number(document.getElementById("C8_attackSkillLv").value),
+    elemAtkUpLv:   Number(document.getElementById("C12_elemAtkUpLv").value),
+    senseiKououLv: Number(document.getElementById("G12_senseiKououLv").value),
+    shinganLv:     Number(document.getElementById("G9_shinganLv").value),
+
+    kokushokuIttaiOn: document.getElementById("I9_kokushokuIttaiOn").checked,
+
+    superCritLv: Number(document.getElementById("C15_superCritLv").value),
+
+    // ここから下は、まだUI寄せの段階なので一旦持つだけでOK
+    // （calc() で使わないなら無視される）
+    kougekiLv: Number(document.getElementById("E8_kougekiLv").value),
+    fullChargeLv: Number(document.getElementById("G8_fullChargeLv").value),
+    semeNoShuseiLv: Number(document.getElementById("I8_semeNoShuseiLv").value),
+    gyakushuLv: Number(document.getElementById("C9_gyakushuLv").value),
+    nushiNoTamashiiOn: document.getElementById("E9_nushiNoTamashiiOn").checked,
+    saikaLv: Number(document.getElementById("E12_saikaLv").value),
+    critAttackElemLv: Number(document.getElementById("I12_critAttackElemLv").value),
+    wexLv: Number(document.getElementById("E15_wexLv").value),
+    konshinLv: Number(document.getElementById("G15_konshinLv").value),
+    chikaraNoKaihouLv: Number(document.getElementById("I15_chikaraNoKaihouLv").value),
+    kyouryuuKokufukuOn: document.getElementById("C16_kyouryuuKokufukuOn").checked,
+    mugaLv: Number(document.getElementById("E16_mugaLv").value),
+    challengerLv: Number(document.getElementById("C19_challengerLv").value),
+    rengekiLv: Number(document.getElementById("E19_rengekiLv").value),
+    rengekiBoostLv: Number(document.getElementById("G19_rengekiBoostLv").value),
   };
 }
+
 
 function render(rows){
   const tbody = document.getElementById("tbody");
@@ -390,6 +402,14 @@ document.getElementById("btnCalc").addEventListener("click", () => {
 document.getElementById("btnReset").addEventListener("click", () => {
   location.reload();
 });
+
+function toRate01(v){
+  const x = Number(v);
+  if(!Number.isFinite(x)) return NaN;
+  if(x > 1) return x / 100;  // 45 -> 0.45
+  return x;                  // 0.45 -> 0.45
+}
+
 
 // 公開時のみ広告枠を有効化（今は false）
 if (IS_PUBLIC) {
