@@ -130,215 +130,254 @@
     <div class="panelTitle">入力</div>
 
       <!-- 基本 -->
+<!-- ===== Sheet-like Inputs ===== -->
 <section class="card">
-  <h2 style="font-size:14px;margin:0 0 8px;">Inputs（シート配置寄せ）</h2>
+  <h2 style="font-size:14px;margin:0 0 8px;">入力（シート配置）</h2>
 
-  <div class="sheet">
+  <!-- %入力方式：0.45 or 45 を統一するための注意 -->
+  <p class="muted" style="margin:0 0 10px;">
+    ※%系は「0.45入力」でも「45入力」でもOK（内部で自動補正）
+  </p>
+
+  <div class="sheetGrid">
 
     <!-- ===== 各種設定（上段） ===== -->
-    <div class="sectionTitle">各種設定</div>
-    <div class="settingsGrid">
+    <div class="sheetTitle">各種設定</div>
 
-      <div class="field">
-        <label>基礎内部攻撃力（C3）</label>
-        <input id="C3_A_base" type="number" value="205" step="1">
-      </div>
-
-      <div class="field">
-        <label>基礎属性値（E3）</label>
-        <input id="E3_E_base" type="number" value="270" step="1">
-      </div>
-
-      <div class="field">
-        <label>斬れ味（物理倍率）（G3）</label>
-        <input id="G3_sharpRaw" type="number" value="1.32" step="0.001">
-      </div>
-
-      <div class="field">
-        <label>斬れ味（属性倍率）（I3）</label>
-        <input id="I3_sharpElem" type="number" value="1.151" step="0.001">
-      </div>
-
-      <div class="field">
-        <label>物理肉質（C4）0.45 or 45</label>
-        <input id="C4_hzvRaw" type="number" value="45" step="0.1">
-      </div>
-
-      <div class="field">
-        <label>属性肉質（E4）0.25 or 25</label>
-        <input id="E4_hzvElem" type="number" value="5" step="0.1">
-      </div>
-
-      <div class="field">
-        <label>基礎会心率（G4）0.10 or 10</label>
-        <input id="G4_critBase" type="number" value="5" step="0.1">
-      </div>
-
-      <div class="field">
-        <label>復元ボーナス総枠（C5）</label>
-        <input id="C5_totalSlots" type="number" value="5" min="0" step="1">
-      </div>
-
-      <div class="field">
-        <label>切れ味枠（E5）</label>
-        <input id="E5_sharpCnt" type="number" value="1" min="0" step="1">
-      </div>
-
-      <div class="field">
-        <label>表示件数 TopN（G5）</label>
-        <input id="G5_topN" type="number" value="10" min="1" max="200" step="1">
-      </div>
-
-      <div class="field">
-        <label>丸め方式（I5）</label>
-        <input id="I5_roundMode" type="number" value="9" step="1">
-      </div>
-
-      <div class="field">
-        <label>超会心Lv（C15）</label>
-        <select id="C15_superCritLv">
-          <option>0</option><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option>
-        </select>
-      </div>
-
+    <div class="cell">
+      <div class="lbl">基礎内部攻撃力</div>
+      <input id="A_base" type="number" value="205" step="1">
     </div>
 
-    <hr class="divider">
-
-    <!-- ===== 攻撃力関係（中段） ===== -->
-    <div class="sectionTitle">攻撃力関係</div>
-    <div class="skillGrid">
-      <div class="field">
-        <label>攻撃（C8）</label>
-        <input id="C8_attackSkillLv" type="number" value="5" min="0" max="5" step="1">
-      </div>
-
-      <div class="field">
-        <label>巧撃（E8）</label>
-        <input id="E8_kougekiLv" type="number" value="3" min="0" max="5" step="1">
-      </div>
-
-      <div class="field">
-        <label>フルチャージ（G8）</label>
-        <input id="G8_fullChargeLv" type="number" value="0" min="0" max="5" step="1">
-      </div>
-
-      <div class="field">
-        <label>攻めの守勢（I8）</label>
-        <input id="I8_semeNoShuseiLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
-
-      <div class="field">
-        <label>逆襲（C9）</label>
-        <input id="C9_gyakushuLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
-
-      <div class="field">
-        <label>ヌシの魂（E9）</label>
-        <select id="E9_nushiNoTamashiiOn">
-          <option value="OFF">OFF</option>
-          <option value="ON" selected>ON</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>心眼（G9）</label>
-        <input id="G9_shinganLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
-
-      <div class="field">
-        <label>黒蝕一体 II（I9）</label>
-        <select id="I9_kokushokuIttaiOn">
-          <option value="OFF" selected>OFF</option>
-          <option value="ON">ON</option>
-        </select>
-      </div>
+    <div class="cell">
+      <div class="lbl">基礎属性値</div>
+      <input id="E_base" type="number" value="270" step="1">
     </div>
 
-    <hr class="divider">
+    <div class="cell">
+      <div class="lbl">斬れ味（物理倍率）</div>
+      <input id="sharpRaw" type="number" value="1.32" step="0.001">
+    </div>
+
+    <div class="cell">
+      <div class="lbl">斬れ味（属性倍率）</div>
+      <input id="sharpElem" type="number" value="1.151" step="0.001">
+    </div>
+
+    <div class="cell">
+      <div class="lbl">% 物理肉質</div>
+      <input id="hzvRaw" type="number" value="45" step="0.1">
+      <div class="hint">0.45 でも 45 でもOK</div>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">% 属性肉質</div>
+      <input id="hzvElem" type="number" value="5" step="0.1">
+      <div class="hint">0.05 でも 5 でもOK</div>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">% 基礎会心率</div>
+      <input id="critBase" type="number" value="5" step="0.1">
+      <div class="hint">0.05 でも 5 でもOK</div>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">復元ボーナス総枠</div>
+      <input id="totalSlots" type="number" value="5" step="1" min="0">
+    </div>
+
+    <div class="cell">
+      <div class="lbl">切れ味ボーナス枠</div>
+      <input id="sharpCnt" type="number" value="1" step="1" min="0">
+    </div>
+
+    <div class="cell">
+      <div class="lbl">表示件数（TopN）</div>
+      <input id="topN" type="number" value="10" step="1" min="1" max="200">
+    </div>
+
+    <div class="cell">
+      <div class="lbl">丸め方式</div>
+      <input id="roundMode" type="number" value="9" step="1" min="0">
+    </div>
+
+    <!-- ===== 攻撃力関係 ===== -->
+    <div class="sheetTitle">攻撃力関係</div>
+
+    <div class="cell">
+      <div class="lbl">攻撃</div>
+      <select id="attackSkillLv">
+        <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+        <option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">巧撃</div>
+      <select id="kougekiLv">
+        <option>0</option><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">フルチャージ</div>
+      <select id="fullChargeLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">攻めの守勢</div>
+      <select id="semeNoShuseiLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">逆襲</div>
+      <select id="gyakushuLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">ヌシの魂</div>
+      <select id="nushiNoTamashiiOn">
+        <option value="OFF" selected>OFF</option>
+        <option value="ON">ON</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">心眼（肉質&lt;0.45で有効）</div>
+      <select id="shinganLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">黒蝕一体Ⅱ</div>
+      <select id="kokushokuIttaiOn">
+        <option value="OFF" selected>OFF</option>
+        <option value="ON">ON</option>
+      </select>
+    </div>
 
     <!-- ===== 属性関係 ===== -->
-    <div class="sectionTitle">属性関係</div>
-    <div class="skillGrid">
-      <div class="field">
-        <label>属性攻撃強化Lv（C12）</label>
-        <input id="C12_elemAtkUpLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
+    <div class="sheetTitle">属性関係</div>
 
-      <div class="field">
-        <label>災禍転福（E12）</label>
-        <input id="E12_saikaLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
-
-      <div class="field">
-        <label>宣戦呼応（G12）</label>
-        <input id="G12_senseiKououLv" type="number" value="0" min="0" max="2" step="1">
-      </div>
-
-      <div class="field">
-        <label>会心撃【属性】（I12）</label>
-        <input id="I12_critAttackElemLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
+    <div class="cell">
+      <div class="lbl">属性攻撃強化Lv</div>
+      <select id="elemAtkUpLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
     </div>
 
-    <hr class="divider">
+    <div class="cell">
+      <div class="lbl">災禍転福</div>
+      <select id="saikaLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">宣戦呼応</div>
+      <select id="senseiKououLv">
+        <option selected>0</option><option>1</option><option>2</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">会心撃【属性】</div>
+      <select id="critAttackElemLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
 
     <!-- ===== 会心関係 ===== -->
-    <div class="sectionTitle">会心関係</div>
-    <div class="skillGrid">
-      <div class="field">
-        <label>弱点特攻（E15）</label>
-        <input id="E15_wexLv" type="number" value="5" min="0" max="5" step="1">
-      </div>
-      <div class="field">
-        <label>渾身（G15）</label>
-        <input id="G15_konshinLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
-      <div class="field">
-        <label>力の解放（I15）</label>
-        <input id="I15_chikaraNoKaihouLv" type="number" value="0" min="0" max="5" step="1">
-      </div>
+    <div class="sheetTitle">会心関係</div>
 
-      <div class="field">
-        <label>狂竜症克服（C16）</label>
-        <select id="C16_kyouryuuKokufukuOn">
-          <option value="OFF" selected>OFF</option>
-          <option value="ON">ON</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>無我の境地（E16）</label>
-        <input id="E16_mugaLv" type="number" value="0" min="0" max="3" step="1">
-      </div>
+    <div class="cell">
+      <div class="lbl">超会心Lv</div>
+      <select id="superCritLv">
+        <option>0</option><option>1</option><option>2</option><option>3</option>
+        <option selected>4</option><option>5</option>
+      </select>
     </div>
 
-    <hr class="divider">
-
-    <!-- ===== 複数（スクショ下段） ===== -->
-    <div class="sectionTitle">複数</div>
-    <div class="skillGrid">
-      <div class="field">
-        <label>挑戦者（C19）</label>
-        <input id="C19_challengerLv" type="number" value="5" min="0" max="5" step="1">
-      </div>
-      <div class="field">
-        <label>連撃（E19）</label>
-        <input id="E19_rengekiLv" type="number" value="5" min="0" max="5" step="1">
-      </div>
-      <div class="field">
-        <label>連撃強化（G19）</label>
-        <input id="G19_rengekiBoostLv" type="number" value="2" min="0" max="2" step="1">
-      </div>
+    <div class="cell">
+      <div class="lbl">弱点特攻</div>
+      <select id="wexLv">
+        <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option>
+      </select>
     </div>
 
-    <div class="btns" style="margin-top:12px;">
-      <button class="primary" id="btnCalc">最適化実行</button>
-      <button id="btnReset">リセット</button>
+    <div class="cell">
+      <div class="lbl">渾身</div>
+      <select id="konshinLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
     </div>
 
-    <p class="muted" id="status"></p>
+    <div class="cell">
+      <div class="lbl">力の解放</div>
+      <select id="chikaraNoKaihouLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">狂竜症克服</div>
+      <select id="kyouryuuKokufukuOn">
+        <option value="OFF" selected>OFF</option>
+        <option value="ON">ON</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">無我の境地</div>
+      <select id="mugaLv">
+        <option selected>0</option><option>1</option><option>2</option><option>3</option>
+      </select>
+    </div>
+
+    <!-- ===== 複数（挑戦者/連撃） ===== -->
+    <div class="sheetTitle">複数</div>
+
+    <div class="cell">
+      <div class="lbl">挑戦者</div>
+      <select id="challengerLv">
+        <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">連撃</div>
+      <select id="rengekiLv">
+        <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option>
+      </select>
+    </div>
+
+    <div class="cell">
+      <div class="lbl">連撃強化</div>
+      <select id="rengekiBoostLv">
+        <option>0</option><option>1</option><option selected>2</option>
+      </select>
+    </div>
+
+    <!-- 実行ボタン（シートの「最適化実行」っぽい位置） -->
+    <div class="runArea">
+      <button class="primary" id="btnCalc" style="width:100%; height:100%; font-size:16px;">最適化実行</button>
+    </div>
+
   </div>
+
+  <div class="btns" style="margin-top:12px;">
+    <button id="btnReset">リセット</button>
+  </div>
+
+  <p class="muted" id="status"></p>
 </section>
 
 
