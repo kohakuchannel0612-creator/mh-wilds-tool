@@ -737,97 +737,61 @@ function calcOptimizedTopN(input){
 }
 
 function calcSingleWithGekikaBest_(input, { atkAdd, elemAdd, affAdd, combo }) {
-  // まず「復元ボーナス反映後(激化前)」の土台
+  // --- 復元ボーナス反映後(激化前)の土台 ---
   const A_restored = input.A_base + atkAdd;
   const elemBase_restored = input.E_base + elemAdd;
 
-  // ここは calcSingleNoRestoration_ と同じ会心率合算ロジックにしてOK
-  // 例：今は affAdd だけ足してるならそれでOK。後でwex等を足すなら同様に。
+  // 会心：復元 affAdd のみ反映（wex等は今後ここに足す）
   const crit_restored = clamp(input.critBase + affAdd, 0, 1);
 
-  // ---- ここから先の「固定スキル計算」は、あなたの既存ロジックを使ってOK ----
-  // 乗算/加算を先に“まとめて作る”のがコツ（GAS移植と同じ）
-
-  // critMult
+  // critMult（超会心）
   const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
 
-  // 攻撃：倍率まとめ（例）
+  // --- 固定スキル係数まとめ（あなたの方針：乗算→加算）---
+
+  // 攻撃：倍率
   const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
   const shinganActive  = Number.isFinite(input.hzvRaw) && input.hzvRaw < 0.45;
   const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
-
-  // ここに「守勢」「ヌシ魂」など倍率があるなら足す（あなたの実装に合わせて）
   const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
 
-  // 攻撃：加算まとめ（例）
+  // 攻撃：加算
   const atkSkillAdd = getAttackSkillAdd(input.attackSkillLv);
   const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
+  const atkFlatAfterMultTotal = atkSkillAdd + A_kokushokuIttaiAdd;
 
-  // ここに「巧撃/フルチャ/逆襲/挑戦者/連撃…」があるなら同様に足す
-  const atkFlatAfterMultTotal =
-    atkSkillAdd
-    + A_kokushokuIttaiAdd;
-
-  // 属性：乗算/加算まとめ（例）
+  // 属性：倍率/加算
   const sensei = getSenseiKououBonus_(input.senseiKououLv);
   const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
   const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
-
-  // ここに「災禍」「連撃」などがあるなら、同じ方針で elemMulted / elemAdded に入れる
   const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
   const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
 
-  // --- 激化3種を回してbestを取る ---
-  const trials = [
-    { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
-    { type: "会心激化", A_add: -10, crit_add: +0.10, elem_add: -20 },
-    { type: "属性激化", A_add:   0, crit_add: -0.05, elem_add: +30 },
-  ];
+  // --- 激化best（ここだけevalBestGekika_に任せる） ---
+  const best = evalBestGekika_({
+    A_restored,
+    elemBase_restored,
+    crit_restored,
 
-  let best = null;
+    input,
+    atkMultTotal,
+    atkFlatAfterMultTotal,
+    elemMulted,
+    elemAdded,
 
-  for (const t of trials) {
-    const A_mod_base = A_restored + t.A_add;
-    const crit_mod   = clamp(crit_restored + t.crit_add, 0, 1);
-    const elemBase_mod = Math.max(elemBase_restored + t.elem_add, 0);
+    critMult,
+  });
 
-    const A_final = (A_mod_base * atkMultTotal) + atkFlatAfterMultTotal;
-
-    const elemUncapped = (elemBase_mod * elemMulted) + elemAdded;
-    const elemCap      = elementCapFromBase(elemBase_mod);
-    const E_final      = Math.min(elemUncapped, elemCap);
-
-    const dmg = calcRambuExpectedDamage({
-      A: A_final,
-      E: E_final,
-      sharpRaw: input.sharpRaw,
-      sharpElem: input.sharpElem,
-      hzvRaw: input.hzvRaw,
-      hzvElem: input.hzvElem,
-      critRate: crit_mod,
-      critMult,
-      roundMode: input.roundMode,
-    });
-
-    const row = {
-      dmg,
-      type: t.type,
-      combo,
-      atkAdd,
-      elemAdd,
-      affAdd,
-      critFinal: crit_mod,
-      elemUncapped,
-      elemCapped: E_final,
-      elemCap,
-      isElemCapped: elemUncapped > elemCap,
-    };
-
-    if (!best || row.dmg > best.dmg) best = row;
-  }
-
-  return best;
+  // best に DFS出力用の情報を付ける
+  return {
+    ...best,
+    combo,
+    atkAdd,
+    elemAdd,
+    affAdd,
+  };
 }
+
 
 
 /**
@@ -923,7 +887,8 @@ function evalBestGekika_({
   atkMultTotal,              // 例：攻撃*心眼*ヌシ魂*守勢…など“乗算まとめ”
   atkFlatAfterMultTotal,     // 例：巧撃/フルチャ/逆襲/挑戦者/連撃…など“加算まとめ”
   elemMulted,                // 例：災禍*宣戦*属性強化…など“属性乗算まとめ”
-  elemAdded                  // 例：宣戦加算+連撃加算+属性強化加算…など“属性加算まとめ”
+  elemAdded,                 // 例：宣戦加算+連撃加算+属性強化加算…など“属性加算まとめ”
+  critMult                   // ★追加
 }) {
   const trials = [
     { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
@@ -955,7 +920,7 @@ function evalBestGekika_({
       hzvRaw: input.hzvRaw,
       hzvElem: input.hzvElem,
       critRate: crit_mod,
-      critMult: CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25,
+      critMult,
       roundMode: input.roundMode,
       // ※会心撃【属性】を入れてるならここで渡す/反映する（あなたの実装に合わせて）
     });
