@@ -670,7 +670,45 @@ function calcRambuExpectedDamage({A,E,sharpRaw,sharpElem,hzvRaw,hzvElem,critRate
   return total;
 }
 
+function buildFixedCtx_(input){
+  // critMult（超会心）※入力だけで決まる
+  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
+
+  // 心眼の発動判定も inputだけで決まる（hzvRawは固定入力）
+  const hzvRaw = Number(input.hzvRaw);
+  const shinganActive = Number.isFinite(hzvRaw) && hzvRaw < 0.45;
+
+  // 攻撃：倍率/加算（復元とは無関係なので固定）
+  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
+  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
+  const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
+
+  const atkSkillAdd = getAttackSkillAdd(input.attackSkillLv);
+  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
+  const atkFlatAfterMultTotal = atkSkillAdd + A_kokushokuIttaiAdd;
+
+  // 属性：倍率/加算（復元とは無関係なので固定）
+  const sensei = getSenseiKououBonus_(input.senseiKououLv);
+  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
+  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
+  const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
+  const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
+
+  // evalで毎回参照する入力もまとめて持つ（引数削減＆読みやすさ）
+  return {
+    input,
+    critMult,
+    atkMultTotal,
+    atkFlatAfterMultTotal,
+    elemMulted,
+    elemAdded,
+  };
+}
+
+
 function calcOptimizedTopN(input){
+
+  const ctx = buildFixedCtx_(input); // ★追加：固定係数は一回だけ
   // スロット条件
   const totalSlots = Number(input.totalSlots);
   const sharpCnt   = Number(input.sharpCnt);
@@ -682,7 +720,7 @@ function calcOptimizedTopN(input){
   const n = totalSlots - sharpCnt; // 最適化枠
   // n=0なら探索せず1件だけ返す
   if (n === 0) {
-  const single = calcSingleWithGekikaBest_(input, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
+  const single = calcSingleWithGekikaBest_(ctx, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
   single.rank = 1;
   single.exAtk = 0; single.exElm = 0; single.exAff = 0; single.exTotal = 0;
   return [single];
@@ -698,7 +736,8 @@ function calcOptimizedTopN(input){
       const combo = picked.map(p => p.id).join(" / ");
 
       // 末端評価：まずは “復元ボーナスが入った” 単純計算（激化は後で）
-      const row = calcSingleWithGekikaBest_(input, { atkAdd, elemAdd, affAdd, combo });
+      const row = calcSingleWithGekikaBest_(ctx, { atkAdd, elemAdd, affAdd, combo });
+
 
       // EX数を載せる（Outputsに合わせる用）
       row.exAtk = exCount.atk;
@@ -743,54 +782,28 @@ function calcOptimizedTopN(input){
   return top;
 }
 
-function calcSingleWithGekikaBest_(input, { atkAdd, elemAdd, affAdd, combo }) {
-  // --- 復元ボーナス反映後(激化前)の土台 ---
+function calcSingleWithGekikaBest_(ctx, { atkAdd, elemAdd, affAdd, combo }) {
+  const input = ctx.input;
+
+  // --- 復元ボーナス反映後(激化前)の土台（ここだけがDFSで変わる） ---
   const A_restored = input.A_base + atkAdd;
   const elemBase_restored = input.E_base + elemAdd;
-
-  // 会心：復元 affAdd のみ反映（wex等は今後ここに足す）
   const crit_restored = clamp(input.critBase + affAdd, 0, 1);
 
-  // critMult（超会心）
-  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
-
-  // --- 固定スキル係数まとめ（あなたの方針：乗算→加算）---
-
-  // 攻撃：倍率
-  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
-  const hzvRaw = Number(input.hzvRaw);
-  const shinganActive  = Number.isFinite(input.hzvRaw) && input.hzvRaw < 0.45;
-  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
-  const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
-
-  // 攻撃：加算
-  const atkSkillAdd = getAttackSkillAdd(input.attackSkillLv);
-  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
-  const atkFlatAfterMultTotal = atkSkillAdd + A_kokushokuIttaiAdd;
-
-  // 属性：倍率/加算
-  const sensei = getSenseiKououBonus_(input.senseiKououLv);
-  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
-  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
-  const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
-  const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
-
-  // --- 激化best（ここだけevalBestGekika_に任せる） ---
+  // --- 激化best（固定係数はctxから） ---
   const best = evalBestGekika_({
     A_restored,
     elemBase_restored,
     crit_restored,
 
     input,
-    atkMultTotal,
-    atkFlatAfterMultTotal,
-    elemMulted,
-    elemAdded,
-
-    critMult,
+    atkMultTotal: ctx.atkMultTotal,
+    atkFlatAfterMultTotal: ctx.atkFlatAfterMultTotal,
+    elemMulted: ctx.elemMulted,
+    elemAdded: ctx.elemAdded,
+    critMult: ctx.critMult,
   });
 
-  // best に DFS出力用の情報を付ける
   return {
     ...best,
     combo,
@@ -827,11 +840,11 @@ function evalBestGekika_({
   elemAdded,                 // 例：宣戦加算+連撃加算+属性強化加算…など“属性加算まとめ”
   critMult                   // ★追加
 }) {
-  const trials = [
-    { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
-    { type: "会心激化", A_add: -10, crit_add: +0.10, elem_add: -20 },
-    { type: "属性激化", A_add:   0, crit_add: -0.05, elem_add: +30 },
-  ];
+  //const trials = [
+  //  { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
+  //  { type: "会心激化", A_add: -10, crit_add: +0.10, elem_add: -20 },
+  //  { type: "属性激化", A_add:   0, crit_add: -0.05, elem_add: +30 },
+  //];
 
   let best = null;
 
