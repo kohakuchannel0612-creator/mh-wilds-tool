@@ -611,6 +611,151 @@ const GEKIKA_TRIALS = [
 function clamp(x, lo, hi){ return Math.max(lo, Math.min(hi, x)); }
 function round1(x){ return Math.round(x*10)/10; }
 
+function isOn_(v){
+  if (v === true) return true;
+  if (v === false) return false;
+  const s = String(v).trim().toUpperCase();
+  return (s === "ON" || s === "TRUE" || s === "1" || s === "YES");
+}
+
+function getCritAttackElemMult(lv){
+  switch (Number(lv) || 0) {
+    case 1: return 1.05;
+    case 2: return 1.10;
+    case 3: return 1.15;
+    default: return 1.0;
+  }
+}
+
+function getKougekiBonus(lv){
+  switch (Number(lv) || 0) {
+    case 1: return 10;
+    case 2: return 15;
+    case 3: return 20;
+    case 4: return 25;
+    case 5: return 30;
+    default: return 0;
+  }
+}
+
+function getFullChargeBonus(lv){
+  switch (Number(lv) || 0) {
+    case 1: return 3;
+    case 2: return 6;
+    case 3: return 10;
+    case 4: return 15;
+    case 5: return 20;
+    default: return 0;
+  }
+}
+
+function getSemeNoShuseiBonus(lv){
+  switch (Number(lv) || 0) {
+    case 1: return 1.05;
+    case 2: return 1.10;
+    case 3: return 1.15;
+    default: return 1.0;
+  }
+}
+
+function getGyakushuBonus(lv){
+  switch (Number(lv) || 0) {
+    case 1: return 10;
+    case 2: return 15;
+    case 3: return 25;
+    default: return 0;
+  }
+}
+
+function getWeaknessExploitAffAdd_(lv, hzvRaw){
+  if (!Number.isFinite(hzvRaw) || hzvRaw < 0.45) return 0.0;
+  const L = clamp(Number(lv) || 0, 0, 5);
+  switch (L) {
+    case 1: return 0.05;
+    case 2: return 0.10;
+    case 3: return 0.15;
+    case 4: return 0.20;
+    case 5: return 0.30;
+    default: return 0.0;
+  }
+}
+
+function getKonshinAffAdd_(lv){
+  const L = clamp(Number(lv) || 0, 0, 3);
+  switch (L) {
+    case 1: return 0.10;
+    case 2: return 0.20;
+    case 3: return 0.30;
+    default: return 0.0;
+  }
+}
+
+function getChikaraNoKaihouAffAdd_(lv){
+  const L = clamp(Number(lv) || 0, 0, 5);
+  switch (L) {
+    case 1: return 0.10;
+    case 2: return 0.20;
+    case 3: return 0.30;
+    case 4: return 0.40;
+    case 5: return 0.50;
+    default: return 0.0;
+  }
+}
+
+function getChallengerBonus_(lv){
+  const L = clamp(Number(lv) || 0, 0, 5);
+  switch (L) {
+    case 1: return { atkAdd: 4,  affAdd: 0.03 };
+    case 2: return { atkAdd: 8,  affAdd: 0.05 };
+    case 3: return { atkAdd: 12, affAdd: 0.07 };
+    case 4: return { atkAdd: 16, affAdd: 0.10 };
+    case 5: return { atkAdd: 20, affAdd: 0.15 };
+    default: return { atkAdd: 0,  affAdd: 0.00 };
+  }
+}
+
+function getRengekiBonus_(lv){
+  const L = clamp(Number(lv) || 0, 0, 5);
+  switch (L) {
+    case 1: return { atkAdd: 8,  elemAdd: 40 };
+    case 2: return { atkAdd: 10, elemAdd: 60 };
+    case 3: return { atkAdd: 12, elemAdd: 80 };
+    case 4: return { atkAdd: 15, elemAdd: 100 };
+    case 5: return { atkAdd: 18, elemAdd: 120 };
+    default: return { atkAdd: 0,  elemAdd: 0 };
+  }
+}
+
+function getRengekiBoostAtkAdd_(lv){
+  const L = clamp(Number(lv) || 0, 0, 2);
+  switch (L) {
+    case 1: return 8;
+    case 2: return 18;
+    default: return 0;
+  }
+}
+
+function getSaikaElemMult_(lv){
+  const L = clamp(Number(lv) || 0, 0, 3);
+  switch (L) {
+    case 1: return 1.05;
+    case 2: return 1.10;
+    case 3: return 1.15;
+    default: return 1.0;
+  }
+}
+
+function getMugaNoKyouchiAffAdd_(lv){
+  const L = clamp(Number(lv) || 0, 0, 3);
+  switch (L) {
+    case 1: return 0.03;
+    case 2: return 0.06;
+    case 3: return 0.10;
+    default: return 0.0;
+  }
+}
+
+
 function getAttackSkillMult(lv){ return (lv===4)?1.02:(lv===5)?1.04:1.0; }
 function getAttackSkillAdd(lv){ return (lv===1)?3:(lv===2)?5:(lv===3)?7:(lv===4)?8:(lv===5)?9:0; }
 
@@ -647,63 +792,89 @@ function elementCapFromBase(baseElem){
 
 
 
-// 期待ダメ計算（あなたの構造に合わせたミニ版）
-// ※会心撃【属性】などは後でここに追加してOK
-function calcRambuExpectedDamage({A,E,sharpRaw,sharpElem,hzvRaw,hzvElem,critRate,critMult,roundMode}){
-  const r = clamp(critRate,0,1);
-  const mode = Number(roundMode)||0;
+function calcRambuExpectedDamage(params){
+  const {
+    A, E,
+    sharpRaw, sharpElem,
+    hzvRaw, hzvElem,
+    critRate, critMult,
+    elemBonus,
+    critAttackElemLv,
+    roundMode
+  } = params;
+
+  const r = clamp(critRate, 0, 1);
+  const eBonus = (elemBonus == null) ? 1.0 : elemBonus;
+  const mode = Number(roundMode) || 0;
+
   let total = 0;
 
-  for(const g of RAMBU_GROUPS){
-    const rawBasePerHit  = A * (g.mv/100) * sharpRaw * hzvRaw;
-    const elemPerHit     = (E/10) * g.elem * sharpElem * hzvElem;
+  for (const g of RAMBU_GROUPS) {
+    const rawBasePerHit = A * (g.mv / 100) * sharpRaw * hzvRaw;
 
-    const perHit = rawBasePerHit * ((1-r)+r*critMult) + elemPerHit;
+    const elemBasePerHit = (E / 10) * g.elem * sharpElem * hzvElem * eBonus;
 
-    if(mode===10){
-      total += round1(perHit) * g.count;
-    }else{
-      total += perHit * g.count;
+    const elemBonusMultiplier = getCritAttackElemMult(critAttackElemLv);
+    const elemAdjusted = elemBasePerHit * ((1 - r) + r * elemBonusMultiplier);
+
+    if (mode === 1) {
+      total += (rawBasePerHit * ((1 - r) + r * critMult) + elemAdjusted) * g.count;
+
+    } else if (mode === 2) {
+      const perHit = rawBasePerHit * ((1 - r) + r * critMult) + elemAdjusted;
+      total += Math.floor(perHit) * g.count;
+
+    } else if (mode === 3) {
+      const nonCrit = Math.floor(rawBasePerHit + elemAdjusted);
+      const crit    = Math.floor(rawBasePerHit * critMult + elemAdjusted);
+      const expHit  = (1 - r) * nonCrit + r * crit;
+      total += expHit * g.count;
+
+    } else if (mode === 4) {
+      const elemInt = Math.floor(elemAdjusted);
+      const rawNonCritInt = Math.floor(rawBasePerHit);
+      const rawCritInt    = Math.floor(rawBasePerHit * critMult);
+      const nonCrit = rawNonCritInt + elemInt;
+      const crit    = rawCritInt + elemInt;
+      const expHit = (1 - r) * nonCrit + r * crit;
+      total += expHit * g.count;
+
+    } else if (mode === 5) {
+      const perHit = rawBasePerHit * ((1 - r) + r * critMult) + elemAdjusted;
+      total += Math.floor(perHit * g.count);
+
+    } else if (mode === 6) {
+      total += (rawBasePerHit * ((1 - r) + r * critMult) + elemAdjusted) * g.count;
+
+    } else if (mode === 7) {
+      const rawPart  = rawBasePerHit * ((1 - r) + r * critMult) * g.count;
+      const elemPart = Math.floor(elemAdjusted * g.count);
+      total += rawPart + elemPart;
+
+    } else if (mode === 9) {
+      const rawNonCrit = round1(rawBasePerHit);
+      const rawCrit    = round1(rawBasePerHit * critMult);
+      const elem       = round1(elemAdjusted);
+      const expHit = (1 - r) * (rawNonCrit + elem) + r * (rawCrit + elem);
+      total += expHit * g.count;
+
+    } else if (mode === 10) {
+      const rawNonCrit = round1(rawBasePerHit);
+      const rawCrit    = round1(rawBasePerHit * critMult);
+      const elem       = round1(elemAdjusted);
+      const expHit = (1 - r) * (rawNonCrit + elem) + r * (rawCrit + elem);
+      total += expHit * g.count;
+
+    } else {
+      total += (rawBasePerHit * ((1 - r) + r * critMult) + elemAdjusted) * g.count;
     }
   }
-  if(mode===10) return round1(total);
+
+  if (mode === 10) return round1(total);
+  if (mode === 6) return Math.floor(total);
   return total;
 }
 
-function buildFixedCtx_(input){
-  // critMult（超会心）※入力だけで決まる
-  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
-
-  // 心眼の発動判定も inputだけで決まる（hzvRawは固定入力）
-  const hzvRaw = Number(input.hzvRaw);
-  const shinganActive = Number.isFinite(hzvRaw) && hzvRaw < 0.45;
-
-  // 攻撃：倍率/加算（復元とは無関係なので固定）
-  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
-  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
-  const atkMultTotal = 1.0 * atkSkillMult * shinganAtkMult;
-
-  const atkSkillAdd = getAttackSkillAdd(input.attackSkillLv);
-  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
-  const atkFlatAfterMultTotal = atkSkillAdd + A_kokushokuIttaiAdd;
-
-  // 属性：倍率/加算（復元とは無関係なので固定）
-  const sensei = getSenseiKououBonus_(input.senseiKououLv);
-  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
-  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
-  const elemMulted = 1.0 * sensei.elemMult * elemAtkUpMult;
-  const elemAdded  = 0 + sensei.elemAdd + elemAtkUpAdd;
-
-  // evalで毎回参照する入力もまとめて持つ（引数削減＆読みやすさ）
-  return {
-    input,
-    critMult,
-    atkMultTotal,
-    atkFlatAfterMultTotal,
-    elemMulted,
-    elemAdded,
-  };
-}
 
 
 function calcOptimizedTopN(input){
@@ -720,11 +891,48 @@ function calcOptimizedTopN(input){
   const n = totalSlots - sharpCnt; // 最適化枠
   // n=0なら探索せず1件だけ返す
   if (n === 0) {
-  const single = calcSingleWithGekikaBest_(ctx, { atkAdd:0, elemAdd:0, affAdd:0, combo:"—" });
-  single.rank = 1;
-  single.exAtk = 0; single.exElm = 0; single.exAff = 0; single.exTotal = 0;
+  // GASと同じ：n===0 は激化を評価しない（復元も激化もない前提）
+  const A_final = (input.A_base * ctx.atkMultTotal) + ctx.atkFlatAfterMultTotal;
+
+  const elemBase_mod = input.E_base;
+  const elemUncapped0 = (elemBase_mod * ctx.elemMulted) + ctx.elemAdded;
+  const elemCap0 = elementCapFromBase(elemBase_mod);
+  const E_final0 = Math.min(elemUncapped0, elemCap0);
+
+  const critFinal0 = clamp(input.critBase + ctx.critExtra, 0, 1);
+
+  const dmg0 = calcRambuExpectedDamage({
+    A: A_final,
+    E: E_final0,
+    sharpRaw: input.sharpRaw,
+    sharpElem: input.sharpElem,
+    hzvRaw: input.hzvRaw,
+    hzvElem: input.hzvElem,
+    critRate: critFinal0,
+    critMult: ctx.critMult,
+    elemBonus: 1.0,
+    critAttackElemLv: input.critAttackElemLv,
+    roundMode: input.roundMode,
+  });
+
+  const single = {
+    rank: 1,
+    dmg: dmg0,
+    type: "なし",      // GASはこの分岐で激化タイプを持たないので「なし」相当
+    combo: "—",
+    critFinal: critFinal0,
+    elemUncapped: elemUncapped0,
+    elemCapped: E_final0,
+    elemCap: elemCap0,
+    isElemCapped: elemUncapped0 > elemCap0,
+
+    atkAdd: 0, elemAdd: 0, affAdd: 0,
+    exAtk: 0, exElm: 0, exAff: 0, exTotal: 0,
+  };
+
   return [single];
 }
+
 
   const results = [];
   const picked = [];
@@ -782,13 +990,93 @@ function calcOptimizedTopN(input){
   return top;
 }
 
+function buildFixedCtx_(input){
+  const critMult = CRIT_MULT_BY_SUPERCRIT[input.superCritLv] ?? 1.25;
+
+  const hzvRaw = Number(input.hzvRaw);
+  const shinganActive = Number.isFinite(hzvRaw) && hzvRaw < 0.45;
+  const shinganAtkMult = shinganActive ? getShinganAtkMult_(input.shinganLv) : 1.0;
+
+  const A_semeNoShuseiBonus = getSemeNoShuseiBonus(input.semeNoShuseiLv);
+  const A_nushiNoTamashiiBonus = input.nushiNoTamashiiOn ? 1.05 : 1.0;
+
+  const atkSkillMult = getAttackSkillMult(input.attackSkillLv);
+  const atkSkillAdd  = getAttackSkillAdd(input.attackSkillLv);
+
+  const A_kougekiBonus = getKougekiBonus(input.kougekiLv);
+  const A_fullChargeBonus = getFullChargeBonus(input.fullChargeLv);
+  const A_gyakushuBonus = getGyakushuBonus(input.gyakushuLv);
+
+  const challenger = getChallengerBonus_(input.challengerLv);
+  const rengeki = getRengekiBonus_(input.rengekiLv);
+  const rengekiBoostAtkAdd = (input.rengekiLv >= 1) ? getRengekiBoostAtkAdd_(input.rengekiBoostLv) : 0;
+
+  const A_kokushokuIttaiAdd = input.kokushokuIttaiOn ? 15 : 0;
+
+  const atkMultTotal =
+    A_semeNoShuseiBonus *
+    A_nushiNoTamashiiBonus *
+    atkSkillMult *
+    shinganAtkMult;
+
+  const atkFlatAfterMultTotal =
+    atkSkillAdd +
+    A_kougekiBonus +
+    A_fullChargeBonus +
+    A_gyakushuBonus +
+    challenger.atkAdd +
+    rengeki.atkAdd +
+    rengekiBoostAtkAdd +
+    A_kokushokuIttaiAdd;
+
+  const saikaElemMult = getSaikaElemMult_(input.saikaLv);
+  const senseiKouou = getSenseiKououBonus_(input.senseiKououLv);
+  const elemAtkUpMult = getElemAtkUpMult_(input.elemAtkUpLv);
+  const elemAtkUpAdd  = getElemAtkUpAdd_(input.elemAtkUpLv);
+
+  let elemMulted = senseiKouou.elemMult;
+  elemMulted *= saikaElemMult;
+  elemMulted *= elemAtkUpMult;
+
+  let elemAdded = senseiKouou.elemAdd;
+  elemAdded += rengeki.elemAdd;
+  elemAdded += elemAtkUpAdd;
+
+  const wexAffAdd = getWeaknessExploitAffAdd_(input.wexLv, hzvRaw);
+  const konshinAffAdd = getKonshinAffAdd_(input.konshinLv);
+  const chikaraNoKaihouAffAdd = getChikaraNoKaihouAffAdd_(input.chikaraNoKaihouLv);
+
+  const kyouryuuKokufukuAffAdd = input.kyouryuuKokufukuOn ? 0.15 : 0.0;
+  const mugaAffAdd = input.kyouryuuKokufukuOn ? getMugaNoKyouchiAffAdd_(input.mugaLv) : 0.0;
+
+  const critExtra =
+    wexAffAdd +
+    konshinAffAdd +
+    chikaraNoKaihouAffAdd +
+    challenger.affAdd +
+    kyouryuuKokufukuAffAdd +
+    mugaAffAdd;
+
+  return {
+    input,
+    critMult,
+    atkMultTotal,
+    atkFlatAfterMultTotal,
+    elemMulted,
+    elemAdded,
+    critExtra,
+  };
+}
+
+
 function calcSingleWithGekikaBest_(ctx, { atkAdd, elemAdd, affAdd, combo }) {
   const input = ctx.input;
 
   // --- 復元ボーナス反映後(激化前)の土台（ここだけがDFSで変わる） ---
   const A_restored = input.A_base + atkAdd;
   const elemBase_restored = input.E_base + elemAdd;
-  const crit_restored = clamp(input.critBase + affAdd, 0, 1);
+  const crit_restored = clamp(input.critBase + affAdd + ctx.critExtra, 0, 1);
+
 
   // --- 激化best（固定係数はctxから） ---
   const best = evalBestGekika_({
@@ -802,6 +1090,7 @@ function calcSingleWithGekikaBest_(ctx, { atkAdd, elemAdd, affAdd, combo }) {
     elemMulted: ctx.elemMulted,
     elemAdded: ctx.elemAdded,
     critMult: ctx.critMult,
+    critAttackElemLv: input.critAttackElemLv,
   });
 
   return {
@@ -838,7 +1127,8 @@ function evalBestGekika_({
   atkFlatAfterMultTotal,     // 例：巧撃/フルチャ/逆襲/挑戦者/連撃…など“加算まとめ”
   elemMulted,                // 例：災禍*宣戦*属性強化…など“属性乗算まとめ”
   elemAdded,                 // 例：宣戦加算+連撃加算+属性強化加算…など“属性加算まとめ”
-  critMult                   // ★追加
+  critMult,                  // ★追加
+  critAttackElemLv
 }) {
   //const trials = [
   //  { type: "攻撃激化", A_add: +10, crit_add: -0.15, elem_add:  0 },
@@ -871,6 +1161,8 @@ function evalBestGekika_({
     hzvElem: input.hzvElem,
     critRate: crit_mod,
     critMult,
+    elemBonus: 1.0,
+    critAttackElemLv,
     roundMode: input.roundMode,
   });
 
